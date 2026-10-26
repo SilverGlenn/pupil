@@ -1,0 +1,12 @@
+import {useState} from 'react';
+import {fingerZones,zoneForKey} from '../../types/typing';
+export const plainKeys="`1234567890-=[]\\;',./";
+export const shiftedKeys='~!@#$%^&*()_+{}|:"<>?';
+export function baseKey(key:string){const i=shiftedKeys.indexOf(key);return i<0?key.toLowerCase():plainKeys[i]}
+export function shiftedKey(key:string){const i=plainKeys.indexOf(key);return i<0?key.toUpperCase():shiftedKeys[i]}
+export interface VirtualKeyboardProps {onKey:(key:string)=>void;expectedKey?:string;pressedKey?:string;physicalShift?:boolean;disabled?:boolean}
+export function VirtualKeyboard({onKey,expectedKey='',pressedKey='',physicalShift=false,disabled=false}:VirtualKeyboardProps){const [shift,setShift]=useState(false);const upper=shift||physicalShift;
+ const key=(value:string,label?:string)=>{const shown=value.length===1&&upper?shiftedKey(value):value;const zone=value==='`'||label==='Left Shift'?1:zoneForKey(value==='Enter'?'\n':value==='Space'?' ':value);const needsShift=expectedKey!==baseKey(expectedKey);const expected=baseKey(expectedKey)===value||value==='Space'&&expectedKey===' '||value==='Shift'&&needsShift&&(zoneForKey(expectedKey)<=4?label==='Right Shift':label==='Left Shift');return <button type="button" key={label??value} aria-label={label??shown} aria-pressed={value==='Shift'?upper:undefined} data-zone={zone} disabled={disabled} className={`key ${expected?'expected':''} ${baseKey(pressedKey)===value?'pressed':''}`} style={{minWidth:value==='Space'?240:value.length>1?96:56,minHeight:56,borderBottom:`4px solid ${fingerZones[zone].color}`,flexShrink:0}} onPointerDown={e=>e.preventDefault()} onClick={()=>{if(value==='Shift'){setShift(s=>!s);return}onKey(value==='Space'?' ':value==='Enter'?'\n':shown);setShift(false);navigator.vibrate?.(15)}}>{label??(value==='Space'?'Space':shown)}{(value==='f'||value==='j')&&<span aria-hidden="true"> •</span>}</button>};
+ return <div className="virtual-keyboard" style={{overflowX:'auto',touchAction:'manipulation'}} aria-label="Touch keyboard">{['`1234567890-=','qwertyuiop[]\\',"asdfghjkl;'",'zxcvbnm,./'].map((row,i)=><div className="keyboard-row" key={row} style={{display:'flex',gap:8,marginBottom:8,width:'max-content'}}>{i===3&&key('Shift','Left Shift')}{[...row].map(k=>key(k))}{i===0&&key('Backspace')}{i===2&&key('Enter')}{i===3&&key('Shift','Right Shift')}</div>)}<div className="keyboard-row">{key('Space')}</div></div>
+}
+export default VirtualKeyboard;

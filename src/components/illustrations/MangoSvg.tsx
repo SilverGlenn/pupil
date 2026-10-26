@@ -1,0 +1,2 @@
+import type {SVGProps} from 'react';
+export function MangoSvg(props:SVGProps<SVGSVGElement>){return <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}><g stroke="#1E293B" strokeWidth="3" strokeLinejoin="round"><path d="M131 37C71 14 29 55 38 103c9 50 88 43 114 6 22-32 6-60-21-72Z" fill="#FBBF24"/><path d="M126 36c0-15 7-23 18-26"/><path d="M131 28c18-19 42-10 43 1-15 16-32 14-43-1Z" fill="#059669"/><path d="M56 89c0-20 13-33 30-38" stroke="#FFFBEB" strokeWidth="7" strokeLinecap="round"/></g></svg>};export default MangoSvg;

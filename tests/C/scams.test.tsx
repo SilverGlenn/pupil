@@ -1,0 +1,11 @@
+import {afterEach,expect,it,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {SettingsProvider} from '../../src/context/SettingsContext';
+import {AuthProvider} from '../../src/context/AuthContext';
+import {StageThemeProvider} from '../../src/context/StageThemeContext';
+import {ProgressProvider} from '../../src/context/ProgressContext';
+import {SafeScamInspector} from '../../src/components/simulators/SafeScamInspector';
+import type {ScamScenario} from '../../src/types/simulators';
+const cases:ScamScenario[]=[{id:'fake',senderDisplay:'Unknown sender',senderRaw:'+639991234567',messageType:'SMS',messageBody:'Give me your OTP at http://bad.invalid now!',inspectionClues:{senderClue:'Unknown phone number.',urlClue:'Not an official domain.',urgencyClue:'Artificial urgency.'},isScam:true,explanationFeedback:'Never share your OTP.',redFlagsList:['Asks for OTP.']},{id:'school',senderDisplay:'School',senderRaw:'teacher@school.edu.ph',messageType:'EMAIL',messageBody:'Review your notes.',inspectionClues:{senderClue:'School sender.',urlClue:'No link.',urgencyClue:'No pressure.'},isScam:false,explanationFeedback:'Normal school reminder.',redFlagsList:[]}];
+afterEach(cleanup);
+it('reveals clue tools, keeps malicious text inert, retries incorrect verdicts and requires all cases',()=>{const done=vi.fn();render(<SettingsProvider><AuthProvider><StageThemeProvider><ProgressProvider><SafeScamInspector scenarios={cases} onComplete={done}/></ProgressProvider></StageThemeProvider></AuthProvider></SettingsProvider>);expect(document.querySelector('a')).toBeNull();fireEvent.click(screen.getByText('Check Sender'));expect(screen.getByText('Unknown phone number.')).toBeTruthy();fireEvent.click(screen.getByText('SAFE / LEGITIMATE'));expect(screen.getByRole('status').textContent).toContain('Never share your OTP.');expect(screen.queryByText('Next case')).toBeNull();expect(done).not.toHaveBeenCalled();fireEvent.click(screen.getByText('SCAM / PHISHING'));fireEvent.click(screen.getByText('Next case'));expect(done).not.toHaveBeenCalled();fireEvent.click(screen.getByText('SAFE / LEGITIMATE'));fireEvent.click(screen.getByText('Finish inspection'));expect(done).toHaveBeenCalledTimes(1)});

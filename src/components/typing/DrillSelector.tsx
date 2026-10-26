@@ -1,0 +1,3 @@
+import type {TypingDrill} from '../../types/typing';
+export function DrillSelector({drills,selectedId,onSelect,studio=false,completed={}}:{drills:TypingDrill[];selectedId:string;onSelect:(id:string)=>void;studio?:boolean;completed?:Record<string,{starsEarned:number}>}){return <label>Choose a drill<select aria-label="Choose a drill" value={selectedId} onChange={e=>onSelect(e.target.value)}>{[1,2,3,4,5,6].map(s=><optgroup key={s} label={`${studio?'Foundations':'Stage'} ${s}`}>{drills.filter(d=>d.stageNumber===s).map((d,i)=><option key={d.drillId} value={d.drillId}>{studio?`Precision ${s}.${i+1}`:d.title}{completed[d.drillId]?` — ${completed[d.drillId].starsEarned} stars`:''}</option>)}</optgroup>)}</select></label>}
+export default DrillSelector;

@@ -1,0 +1,9 @@
+// One-time seed compiler. Plaintext demo inputs are test/tooling-only, never runtime data.
+import {randomBytes,pbkdf2Sync} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+const credential=pin=>{const salt=randomBytes(16).toString('hex');return {salt,hash:pbkdf2Sync(pin,Buffer.from(salt,'hex'),10000,32,'sha256').toString('hex')}};
+const teacher=credential('1234'),createdAt='2026-10-26T00:00:00.000Z';
+const school={schoolCode:'MABINI-01',displayName:'Mabini Elementary & High School',adminEmail:'',adminPasscodeHash:teacher.hash,adminPasscodeSalt:teacher.salt,createdAt,maxStudents:100,allowSelfRegistration:true};
+const students=[['Aya Cruz','preschool','tarsier','1111'],['Joshua Dizon','elem_lower','mango','2222'],['Bea Ramos','elem_upper','jeepney','3333'],['Mark Santos','highschool','eagle','4444']].map(([displayName,gradeLevel,avatarId,pin],i)=>{const c=credential(pin);return {studentId:`754c41ad-f6c0-4f80-8a72-2ddf3b5ba00${i+1}`,schoolCode:school.schoolCode,displayName,gradeLevel,isHighSchoolFoundations:i===3,pinHash:c.hash,pinSalt:c.salt,avatarId,createdAt,lastLoginAt:createdAt}});
+writeFileSync('src/data/initialRoster.ts',`// Precomputed PBKDF2-SHA256 demo credentials; no runtime plaintext PINs.\nimport type {SchoolGroup,StudentAccount,InitialRoster} from '../types/system';\nexport const initialSchoolGroup:SchoolGroup = ${JSON.stringify(school,null,2)};\nexport const demoStudents:StudentAccount[] = ${JSON.stringify(students,null,2)};\n\n/** Return independent seeds so consumer mutations never change later initializations. */\nexport async function createInitialRoster():Promise<InitialRoster> {\n return {school:{...initialSchoolGroup},students:demoStudents.map(student=>({...student}))};\n}\n`);
+console.log('Wrote hashed seed: one school, four stable UUID accounts, five unique salts.');

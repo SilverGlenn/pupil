@@ -1,0 +1,8 @@
+import {it,expect,vi} from 'vitest';
+import {render,screen,fireEvent} from '@testing-library/react';
+import {StoryReader} from '../../src/components/english/StoryReader';
+import {ConceptArt} from '../../src/components/english/VocabCardViewer';
+import type {StoryPassage} from '../../src/types/curriculum';
+const story:StoryPassage={id:'story',level:'track_4a',title:'A form',metadata:{wordCount:6,targetLexile:'',coreVocabulary:[]},paragraphs:['Read the form.','Review your answers.'],quiz:[1,2,3].map(n=>({questionId:`q${n}`,questionText:`Question ${n}`,options:[{key:'A',text:'Review',isCorrect:true,feedback:'Correct. Review first.'},{key:'B',text:'Skip',isCorrect:false,feedback:'Read again.'}]}))};
+it('requires all three story answers correct and shows corrective feedback',()=>{const complete=vi.fn();render(<StoryReader story={story} onComplete={complete}/>);fireEvent.click(screen.getAllByRole('button',{name:'B. Skip'})[0]);expect(screen.getByRole('status').textContent).toBe('Read again.');for(const b of screen.getAllByRole('button',{name:'A. Review'}))fireEvent.click(b);expect(complete).toHaveBeenCalledTimes(1);fireEvent.click(screen.getAllByRole('button',{name:'A. Review'})[0]);expect(complete).toHaveBeenCalledTimes(1);expect(screen.getByText('Read')).toBeTruthy();expect(screen.getByText('Review')).toBeTruthy()});
+it('picture concepts render SVG geometry without spelling out the answer',()=>{const {container}=render(<ConceptArt concept="Mango" studio/>);expect(screen.getByRole('img',{name:'Mango'})).toBeTruthy();expect(container.querySelector('svg path')).toBeTruthy();expect(container.querySelector('svg text')).toBeNull()});

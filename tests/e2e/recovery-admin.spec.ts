@@ -1,0 +1,18 @@
+import {test,expect} from '@playwright/test';
+import {login,modulePage} from './helpers';
+import {techLessons} from '../../src/data/techLessons';
+test('slide recovery persists slide 3 after three seconds and restores it through the real banner',async({page})=>{
+ await login(page);await modulePage(page,'tech');const lesson=techLessons.find(l=>l.level==='elem_lower'&&l.slides.length>=3)!;
+ await page.getByRole('button',{name:`Open lesson: ${lesson.title}`,exact:true}).click();for(let i=0;i<2;i++)await page.getByRole('button',{name:'Next slide',exact:true}).click();await expect(page.getByRole('heading',{name:lesson.slides[2].headline,exact:true})).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('pupil_brownout_')).map(k=>JSON.parse(localStorage.getItem(k)!)).some(s=>s.slideIndex===2)),{timeout:6000}).toBe(true);
+ await page.reload();await login(page);await page.getByRole('button',{name:'Resume',exact:true}).click();await expect(page.getByRole('heading',{name:lesson.slides[2].headline,exact:true})).toBeVisible();
+ for(let i=2;i<lesson.slides.length-1;i++)await page.getByRole('button',{name:'Next slide',exact:true}).click();await page.getByRole('button',{name:'Knowledge check',exact:true}).click();
+ for(const q of lesson.quiz){await page.getByRole('button',{name:q.options[q.correctIndex],exact:true}).click();const next=page.getByRole('button',{name:'Next question',exact:true});if(await next.isVisible())await next.click()}
+ await page.getByRole('button',{name:/Finish/}).click();await expect(page.getByText('Lesson complete.',{exact:true})).toBeVisible();await page.reload();await login(page);await expect(page.getByRole('button',{name:'Resume',exact:true})).toHaveCount(0);
+});
+test('offline queued drill data cannot resurrect a deleted account after portal deletion and reconnection',async({page,context})=>{
+ await login(page,'Bea Ramos','3333');const id=await page.evaluate(()=>JSON.parse(localStorage.getItem('pupil_student_accounts')!).find((s:any)=>s.displayName==='Bea Ramos').studentId);await modulePage(page,'typing');await page.getByLabel('Choose a drill').selectOption('type-s1-d01');await context.setOffline(true);await page.getByLabel('Typing practice area').click();await page.keyboard.type('a a o o a o a o aa oo');await expect(page.getByText('Drill complete. Your result is saved.')).toBeVisible();await page.getByRole('button',{name:'Switch student',exact:true}).click();
+ await page.getByRole('button',{name:'Teacher / Parent Access'}).click();await page.getByLabel('Teacher passcode').fill('1234');await page.getByRole('button',{name:'Unlock portal'}).click();await page.getByRole('button',{name:'Delete Bea Ramos',exact:true}).click();await page.getByRole('button',{name:'Confirm deletion',exact:true}).click();await expect(page.getByRole('button',{name:'Delete Bea Ramos',exact:true})).toHaveCount(0);await context.setOffline(false);
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('pupil_offline_mutation_queue')||'[]').length)).toBe(0);
+ const state=await page.evaluate(async id=>{const db=await new Promise<IDBDatabase>(res=>{const r=indexedDB.open('pupil-ph',1);r.onsuccess=()=>res(r.result)});const value=await new Promise(res=>{const r=db.transaction('progress_store').objectStore('progress_store').get(id);r.onsuccess=()=>res(r.result)});db.close();return {durable:value,local:JSON.parse(localStorage.getItem('pupil_student_progress_map')||'{}')[id],account:JSON.parse(localStorage.getItem('pupil_student_accounts')!).find((s:any)=>s.studentId===id)}},id);expect(state).toEqual({durable:undefined,local:undefined,account:undefined});
+});
